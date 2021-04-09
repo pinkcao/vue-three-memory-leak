@@ -16,11 +16,11 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
-import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
-import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass.js'
-import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js'
-import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader.js'
+// import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
+// import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
+// import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass.js'
+// import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js'
+// import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader.js'
 import Stats from 'three/examples/jsm/libs/stats.module.js'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -32,28 +32,25 @@ export default {
       group: null,
       objects: [],
       effectFXAA: null,
-      outlinePass: null,
+      // outlinePass: null,
       pixelRatio: null,
-      fxaaPass: null,
+      // fxaaPass: null,
       mouse: new THREE.Vector2(),
       dbmouse: new THREE.Vector2(),
       raycaster: new THREE.Raycaster(),
       selectedObjects: [],
-      dbclickSelectedObjects: [],
-      composer: null,
+      // composer: null,
       stats: null,
-      gui: null,
       animationFrame: null,
-      originX: 0,
-      originY: 0,
       directionalLight: null,
       ambientLight: null,
       atomicArr: [],
-      groupArr: [],
       width: window.innerWidth,
       height: window.innerHeight,
       mode: 'design',
 
+      material: [],
+      geometry: [],
       groupMap: new Map()
     }
   },
@@ -63,7 +60,6 @@ export default {
   created() {},
   mounted() {
     this.flag = true
-    console.log(this.index)
     this.camera = null
     this.scene = null
     this.renderer = null
@@ -73,16 +69,17 @@ export default {
     if (this.renderer != null && this.$refs.container != null) {
       this.animate()
     }
-    this.$refs.container.addEventListener('resize', this.onWindowResize, false)
+    window.addEventListener('resize', this.onWindowResize, false)
   },
   beforeDestroy() {
     this.resetParams()
-    this.$refs.container.removeEventListener('resize', this.onWindowResize, false) //这里是resize整个窗口的监听
+    window.removeEventListener('resize', this.onWindowResize, false) //这里是resize整个窗口的监听
     console.log(this.renderer)
     console.log(this.scene)
-    console.log(this)
   },
-  destroyed() {},
+  destroyed() {
+    console.log(this.atomicArr)
+  },
   watch: {},
   methods: {
     init() {
@@ -93,42 +90,35 @@ export default {
       this.initLoader()
       this.initLight()
       this.initControls()
-      this.initComposer()
+      // this.initComposer()
       this.initStats()
     },
 
     resetParams() {
+      this.raycaster = null
+      this.camera = null
+      this.scene.clear()
       window.cancelAnimationFrame(this.animationFrame)
       console.log(this.scene)
       this.renderer.dispose()
       this.renderer.forceContextLoss()
       this.renderer.content = null
-      console.log(this.renderer)
       this.renderer = null
-      console.log(this.atomicArr.length)
       for (let i = 0; i < this.atomicArr.length; i++) {
-        console.log(this.atomicArr[i].geometry)
         this.atomicArr[i].geometry.dispose()
-        console.log(this.atomicArr[i].geometry)
         this.atomicArr[i].material.dispose()
+        // this.atomicArr[i].geometry = null
+        // this.atomicArr[i].material = null
         console.log(this.atomicArr[i])
       }
-      this.scene.clear()
       this.controls.dispose()
-      this.composer.removePass(this.outlinePass)
-      // this.composer.removePass(this.ShaderPass)
-      this.outlinePass.dispose()
-      // this.ShaderPass.dispose()
-      this.composer = null
-      // this.composer.dispose()
-      // this.composer = null
       this.controls = null
       this.atomicArr = null
       this.groupMap = null
-      console.log(this.groupMap)
+      // console.log(this.groupMap)
       this.light = null
       this.loader = null
-      console.log('all stuffs reset')
+      // console.log('all stuffs reset')
     },
 
     //初始化透视摄像机，此外还有正交摄像机
@@ -171,16 +161,12 @@ export default {
         antialias: true
       })
       this.renderer.shadowMap.enabled = true
-      // console.log(this.renderer.getSize(new THREE.Vector2()))
       this.renderer.setSize(this.width, this.height)
-      // console.log(this.renderer.getSize(new THREE.Vector2()))
       this.renderer.setClearColor(0xffaaaa, 1.0)
-      console.log(this.$refs.container)
       this.$refs.container.appendChild(this.renderer.domElement)
       // }
     },
     initControls() {
-      // if (this.renderer != null) {
       this.controls = new OrbitControls(this.camera, this.renderer.domElement)
       this.controls.enableDamping = true // an animation loop is required when either damping or auto-rotation are enabled
       this.controls.dampingFactor = 0.2 //惯性旋转，默认0.25
@@ -189,7 +175,6 @@ export default {
       this.controls.maxDistance = 1500
       this.controls.maxPolarAngle = Math.PI / 2
       //控制垂直旋转的角度
-      // }
     },
     initGeometry() {
       let geometry = new THREE.BoxGeometry(5, 5, 5)
@@ -200,7 +185,7 @@ export default {
       window.cancelAnimationFrame(this.animationFrame)
       this.animationFrame = window.requestAnimationFrame(this.animate)
     },
-    //加载所有玩意
+    //加载helmet
     initLoader() {
       let loader = new GLTFLoader()
       loader.load(
@@ -234,6 +219,9 @@ export default {
               this.groupMap.get(this.atomicArr[i].userData.uuid).push(this.atomicArr[i])
             }
           }
+          console.log(object.parser)
+          object.parser.cache.removeAll()
+          object.parser = null
         },
         onprogress,
         function (err) {
@@ -241,27 +229,27 @@ export default {
         }
       )
     },
-    initComposer() {
-      // if (this.renderer != null) {
-      this.composer = new EffectComposer(this.renderer)
-      let renderPass = new RenderPass(this.scene, this.camera)
-      this.fxaaPass = new ShaderPass(FXAAShader)
-      const pixelRatio = this.renderer.getPixelRatio()
-      this.fxaaPass.material.uniforms['resolution'].value.x = 1 / (this.width * pixelRatio)
-      this.fxaaPass.material.uniforms['resolution'].value.y = 1 / (this.height * pixelRatio)
-      this.composer.addPass(renderPass)
-      this.composer.addPass(this.fxaaPass)
-      this.outlinePass = new OutlinePass(new THREE.Vector2(this.width, this.height), this.scene, this.camera)
-      this.outlinePass.edgeStrength = 3 //包围线浓度
-      this.outlinePass.edgeGlow = 1 //边缘线范围
-      this.outlinePass.edgeThickness = 1 //边缘线浓度
-      this.outlinePass.pulsePeriod = 2 //包围线闪烁频率
-      this.outlinePass.visibleEdgeColor.set('#00ffff') //包围线颜色
-      this.outlinePass.hiddenEdgeColor.set('#190a05') //被遮挡的边界线颜色
-      this.outlinePass.renderToScreen = true
-      this.composer.addPass(this.outlinePass)
-      // }
-    },
+    // initComposer() {
+    //   // if (this.renderer != null) {
+    //   this.composer = new EffectComposer(this.renderer)
+    //   let renderPass = new RenderPass(this.scene, this.camera)
+    //   this.fxaaPass = new ShaderPass(FXAAShader)
+    //   const pixelRatio = this.renderer.getPixelRatio()
+    //   this.fxaaPass.material.uniforms['resolution'].value.x = 1 / (this.width * pixelRatio)
+    //   this.fxaaPass.material.uniforms['resolution'].value.y = 1 / (this.height * pixelRatio)
+    //   this.composer.addPass(renderPass)
+    //   this.composer.addPass(this.fxaaPass)
+    //   this.outlinePass = new OutlinePass(new THREE.Vector2(this.width, this.height), this.scene, this.camera)
+    //   this.outlinePass.edgeStrength = 3 //包围线浓度
+    //   this.outlinePass.edgeGlow = 1 //边缘线范围
+    //   this.outlinePass.edgeThickness = 1 //边缘线浓度
+    //   this.outlinePass.pulsePeriod = 2 //包围线闪烁频率
+    //   this.outlinePass.visibleEdgeColor.set('#00ffff') //包围线颜色
+    //   this.outlinePass.hiddenEdgeColor.set('#190a05') //被遮挡的边界线颜色
+    //   this.outlinePass.renderToScreen = true
+    //   this.composer.addPass(this.outlinePass)
+    //   // }
+    // },
 
     initStats() {
       // if (this.$refs.container != undefined) {
@@ -282,7 +270,7 @@ export default {
       this.render()
       this.animationFrame = window.requestAnimationFrame(this.animate)
       this.update()
-      this.composer.render()
+      // this.composer.render()
     },
 
     render() {
@@ -344,13 +332,13 @@ export default {
           }
         }
         console.log(this.selectedObjects)
-        this.outlinePass.selectedObjects = this.selectedObjects
+        // this.outlinePass.selectedObjects = this.selectedObjects
       }
 
       if (intersects.length == 0) {
         console.log('nothing selected')
         this.selectedObjects = []
-        this.outlinePass.selectedObjects = []
+        // this.outlinePass.selectedObjects = []
       }
     },
     /**
@@ -374,7 +362,7 @@ export default {
         //在map中添加当前tempGroupArr，方便查找
         this.groupMap.set(tempuuid, tempGroupArr)
         this.selectedObjects = []
-        this.outlinePass.selectedObjects = []
+        // this.outlinePass.selectedObjects = []
       }
     },
     /**
@@ -393,7 +381,7 @@ export default {
         }
       }
       this.selectedObjects = []
-      this.outlinePass.selectedObjects = []
+      // this.outlinePass.selectedObjects = []
     },
     //深度遍历树，把所有叶子结点添加入数组中
     DFS(node, nodeList) {
@@ -401,9 +389,12 @@ export default {
       if (node) {
         if (node.children.length == 0) {
           nodeList.push(node)
-          // console.log(nodeList)
-        }
-        if (node.children.length > 0) {
+          // this.geometry.push(node.geometry)
+          // this.material.push(node.material)
+          // node.geometry.dispose()
+          // node.material.aoMap.dispose()
+          // node.material.dispose()
+        } else if (node.children.length > 0) {
           let children = node.children
           for (var i = 0; i < children.length; i++) {
             this.DFS(children[i], nodeList)
@@ -418,8 +409,7 @@ export default {
       if (this.$route.path == '/') {
         this.$router.push('/about')
         console.log(2)
-      }
-      if (this.$route.path == '/about') {
+      } else if (this.$route.path == '/about') {
         this.$router.push('/')
         console.log(3)
       }
