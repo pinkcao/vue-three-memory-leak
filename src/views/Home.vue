@@ -56,11 +56,9 @@ export default {
   beforeDestroy() {
     this.resetParams()
     window.removeEventListener('resize', this.onWindowResize, false) //这里是resize整个窗口的监听
-    console.log(this.renderer)
-    console.log(this.scene)
   },
   destroyed() {
-    console.log(this.atomicArr)
+    // console.log(this.atomicArr)
   },
   watch: {},
   methods: {
@@ -79,7 +77,7 @@ export default {
       this.camera = null
       this.scene.clear()
       window.cancelAnimationFrame(this.animationFrame)
-      console.log(this.scene)
+      // console.log(this.scene)
       this.renderer.dispose()
       this.renderer.forceContextLoss()
       this.renderer.content = null
@@ -87,7 +85,7 @@ export default {
       for (let i = 0; i < this.atomicArr.length; i++) {
         this.atomicArr[i].geometry.dispose()
         this.atomicArr[i].material.dispose()
-        console.log(this.atomicArr[i])
+        // console.log(this.atomicArr[i])
       }
       this.controls.dispose()
       this.controls = null
@@ -162,9 +160,9 @@ export default {
       loader.load(
         '/flight_helmet/FlightHelmet.gltf',
         object => {
-          console.log(object)
-          console.log(object.scene)
-          console.log(object.scene.children[0].children.length)
+          // console.log(object)
+          // console.log(object.scene)
+          // console.log(object.scene.children[0].children.length)
           this.DFS(object.scene, this.atomicArr)
           for (let i = 0; i < this.atomicArr.length; i++) {
             // this.atomicArr[i].userData.workflowArr = this.workflowArr
@@ -190,13 +188,13 @@ export default {
               this.groupMap.get(this.atomicArr[i].userData.uuid).push(this.atomicArr[i])
             }
           }
-          console.log(object.parser)
+          // console.log(object.parser)
           object.parser.cache.removeAll()
           object.parser = null
         },
         onprogress,
         function (err) {
-          console.log(err)
+          // console.log(err)
         }
       )
     },
@@ -251,14 +249,14 @@ export default {
       return nodeList
     },
     routes() {
-      console.log(1)
-      console.log(this.$route.path)
+      // console.log(1)
+      // console.log(this.$route.path)
       if (this.$route.path == '/') {
         this.$router.push('/about')
-        console.log(2)
+        // console.log(2)
       } else if (this.$route.path == '/about') {
         this.$router.push('/')
-        console.log(3)
+        // console.log(3)
       }
     }
   }
