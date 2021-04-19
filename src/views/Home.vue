@@ -3,6 +3,9 @@
     <div class="route-button">
       <el-button @click.stop.prevent="routes">route</el-button>
     </div>
+    <div class="dispose-button">
+      <el-button @click.stop.prevent="disposeTest">dispose</el-button>
+    </div>
   </div>
 </template>
 
@@ -47,6 +50,7 @@ export default {
     this.renderer = null
     this.light = []
     this.controls = null
+    this.loader = new GLTFLoader()
     this.init()
     if (this.renderer != null && this.$refs.container != null) {
       this.animate()
@@ -66,6 +70,10 @@ export default {
       this.initScene()
       this.initCamera()
       this.initRenderer()
+      // for (let i = 0; i < 500; i++) {
+      //   // this.disposeTest()
+      //   this.initGeometry()
+      // }
       this.initLoader()
       this.initLight()
       this.initControls()
@@ -77,7 +85,6 @@ export default {
       this.camera = null
       this.scene.clear()
       window.cancelAnimationFrame(this.animationFrame)
-      // console.log(this.scene)
       this.renderer.dispose()
       this.renderer.forceContextLoss()
       this.renderer.content = null
@@ -85,7 +92,6 @@ export default {
       for (let i = 0; i < this.atomicArr.length; i++) {
         this.atomicArr[i].geometry.dispose()
         this.atomicArr[i].material.dispose()
-        // console.log(this.atomicArr[i])
       }
       this.controls.dispose()
       this.controls = null
@@ -97,7 +103,7 @@ export default {
 
     initCamera() {
       this.camera = new THREE.PerspectiveCamera(65, this.width / this.height, 0.1, 10000)
-      this.camera.position.set(5, 5, 30)
+      this.camera.position.set(-1, 1, 1)
     },
     initScene() {
       this.scene = new THREE.Scene()
@@ -146,23 +152,52 @@ export default {
       //控制垂直旋转的角度
     },
     initGeometry() {
-      let geometry = new THREE.BoxGeometry(5, 5, 5)
+      let geometry = new THREE.BoxGeometry(1, 1, 1)
       let material = new THREE.MeshNormalMaterial()
       let mesh = new THREE.Mesh(geometry, material)
       this.atomicArr.push(mesh)
       this.scene.add(mesh)
-      window.cancelAnimationFrame(this.animationFrame)
-      this.animationFrame = window.requestAnimationFrame(this.animate)
     },
     //加载helmet
     initLoader() {
-      let loader = new GLTFLoader()
-      loader.load(
+      // let loader = new GLTFLoader()
+      // this.disposeTest()
+      this.loader.load(
         '/flight_helmet/FlightHelmet.gltf',
         object => {
-          // console.log(object)
-          // console.log(object.scene)
-          // console.log(object.scene.children[0].children.length)
+          // object.scene.traverse(obj => {
+          //   if (obj.type === 'Mesh') {
+          //     this.atomicArr.push(obj)
+          //     // this.scene.add(obj)
+          //   }
+          // })
+          // for (let i = 0; i < this.atomicArr.length; i++) {
+          //   this.scene.add(this.atomicArr[i])
+          // }
+          this.DFS(object.scene, this.atomicArr)
+          for (let i = 0; i < this.atomicArr.length; i++) {
+            this.scene.add(this.atomicArr[i])
+          }
+          object.parser.cache.removeAll()
+          object.parser = null
+          object = null
+        },
+        onprogress,
+        function(err) {
+          // console.log(err)
+        }
+      )
+    },
+    loadAnotherObject() {
+      // let loader = new GLTFLoader()
+      this.loader.load(
+        '/lantern/Lantern.gltf',
+        // '/flight_helmet/FlightHelmet.gltf',
+        object => {
+          for (let i = 0; i < this.atomicArr.length; i++) {
+            this.atomicArr[i].geometry.dispose()
+            this.atomicArr[i].material.dispose()
+          }
           this.DFS(object.scene, this.atomicArr)
           for (let i = 0; i < this.atomicArr.length; i++) {
             // this.atomicArr[i].userData.workflowArr = this.workflowArr
@@ -193,7 +228,7 @@ export default {
           object.parser = null
         },
         onprogress,
-        function (err) {
+        function(err) {
           // console.log(err)
         }
       )
@@ -258,6 +293,33 @@ export default {
         this.$router.push('/')
         // console.log(3)
       }
+    },
+    disposeTest() {
+      console.log(this.renderer.info)
+      for (let i = 0; i < this.atomicArr.length; i++) {
+        this.disposeMesh(this.scene, this.atomicArr[i])
+      }
+      //the most fucking critical code is to set this.atomicArr = null
+      this.atomicArr = null
+      this.atomicArr = []
+      console.log(this.renderer.info)
+    },
+    disposeMesh(parent, child) {
+      if (child.children.length) {
+        const arr = child.children.filter(x => x)
+        arr.forEach(a => {
+          this.disposeMesh(child, a)
+        })
+      }
+      if (child instanceof THREE.Mesh || child instanceof THREE.Line) {
+        if (child.material.map) child.material.map.dispose()
+        child.material.dispose()
+        child.geometry.dispose()
+      } else if (child.material) {
+        child.material.dispose()
+      }
+      child.remove()
+      parent.remove(child)
     }
   }
 }
@@ -274,17 +336,17 @@ export default {
   position: absolute;
 }
 
-.compose-button {
+.dispose-button {
   z-index: 20000;
   position: absolute;
   left: 100px;
 }
 
-.discompose-button {
+/* .discompose-button {
   z-index: 20000;
   position: absolute;
   left: 200px;
-}
+} */
 
 .route-button {
   z-index: 20000;
